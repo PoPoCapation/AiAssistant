@@ -1,0 +1,9 @@
+[project]
+name = "ai-assistant"
+version = "1.0.0"
+description = "基于 DeepSeek + LangChain + LangGraph 的智能助手（DDD 分层架构）"
+requires-python = ">=3.12"
+readme = "README.md"
+
+[tool.uv]
+# 使用 uv 管理时读取 requirements.txt

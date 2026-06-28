@@ -1,0 +1,33 @@
+# ===================== Python =====================
+__pycache__/
+*.py[cod]
+*.egg-info/
+.eggs/
+build/
+dist/
+.venv/
+venv/
+
+# ===================== 配置 / 密钥 =====================
+.env
+.env.example
+.env.local
+*.key
+
+# ===================== IDE =====================
+.idea/
+.vscode/
+*.swp
+
+# ===================== 测试 / 缓存 =====================
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+htmlcov/
+.coverage
+
+# ===================== 系统 =====================
+.DS_Store
+Thumbs.db
+/IMPLEMENTATION.md
+/PRD.md
