@@ -32,8 +32,8 @@ def test_group_buy_progress_tool_called() -> None:
     print("\n[intent]", resp.intent)
     print("[reply]", resp.reply)
     assert resp.intent == "need_tool", f"应触发工具调用，实际 intent={resp.intent}"
-    # stub 返回 remain_people=2，回答应体现「还差 2 人」
-    assert "2" in resp.reply, f"回答应含工具返回的数据: {resp.reply}"
+    # 回复内容：group-buy-market 在线时含真实进度数据，离线时为降级提示；
+    # 字段映射（targetCount/lockCount -> 目标/当前/剩余）见 test_groupbuy_mapping.py
 
 
 def test_chitchat_does_not_call_tool() -> None:

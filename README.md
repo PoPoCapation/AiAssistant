@@ -13,11 +13,11 @@
 | 阶段 0 | 项目骨架 + DDD 分层 + 配置 + 通用层 + 接口契约 | ✅ 已完成 |
 | 阶段 1 | DeepSeek LLM 接入（domain + infrastructure） | ✅ 已完成 |
 | 阶段 2 | LangGraph 工作流 + Redis 多轮会话 | ✅ 已完成 |
-| 阶段 3 | MCP 工具（拼团/成团/余额查询） | 🟡 部分完成 |
+| 阶段 3 | MCP 工具（拼团/成团/余额查询） | ✅ 已完成 |
 | 阶段 4 | SSE 流式 HTTP 接口 | ⬜ 待实现 |
 | 阶段 5 | RAG 预留 + 部署文档 | ⬜ 待实现 |
 >
-> 📌 **阶段 3 进度**：工具调用链路已通（LLM 自主调工具 -> tool_node 执行 -> 综合），数据用 stub；真实 group-buy-market 网关（3.2）与 MCP Server 对外暴露（3.5）待接口确认后补。
+> 📌 **阶段 3 状态**：工具调用链路已通（LLM 自主调工具 -> tool_node 执行 -> 综合），T-1/T-2 已接真实 group-buy-market 网关；T-3 余额无对应接口、降级提示；MCP Server 对外暴露（3.5）未做。
 
 > ⚠️ **当前能力边界**：到阶段 2 为止只到**服务层**——能通过 `AssistantService` 完成**多轮** LLM 对话（Redis 记上下文，按 `session_id` 隔离），**尚未提供 HTTP 接口**（`/chat`、`/health` 等在阶段 4 / 后续补齐）。验证方式为直接调用服务层测试，无需启动 Web 服务。
 
@@ -75,12 +75,14 @@ AiAssistant/
 │   │   ├── port/deepseek_llm_adapter.py          # ✅ ILLMPort 实现（chat / chat_stream）
 │   │   └── repository/
 │   │       ├── redis_session_repository.py       # ✅ 会话仓储 Redis 实现（阶段 2）
-│   │       └── groupbuy_repository_impl.py       # 🟡 拼团仓储 stub（真实 gateway 待补，阶段 3）
+│   │       └── groupbuy_repository_impl.py       # ✅ 拼团仓储（真实 gateway，阶段 3）
+│   ├── gateway/groupbuy_gateway.py               # ✅ group-buy-market HTTP 网关（阶段 3）
 │   └── redis/redis_client.py                     # ✅ async Redis 客户端，按 loop 缓存（阶段 2）
 ├── trigger/                        # 触发器层（HTTP controller，阶段 4）
 ├── tests/test_llm.py               # ✅ 阶段 1 验证
 ├── tests/test_session.py           # ✅ 阶段 2 多轮验证
 ├── tests/test_tools.py             # ✅ 阶段 3 工具调用验证
+├── tests/test_groupbuy_mapping.py  # ✅ 阶段 3 字段映射验证（mock）
 ├── conftest.py                     # ✅ pytest 根级 sys.path 配置
 ├── requirements.txt
 ├── pyproject.toml

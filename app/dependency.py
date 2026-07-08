@@ -21,6 +21,7 @@ from domain.mcp.service.tools.group_buy_progress_tool import build_group_buy_pro
 from domain.mcp.service.tools.group_complete_tool import build_group_complete_tool
 from infrastructure.adapter.port.deepseek_llm_adapter import DeepSeekLLMAdapter
 from infrastructure.adapter.repository.groupbuy_repository_impl import GroupBuyRepositoryImpl
+from infrastructure.gateway.groupbuy_gateway import GroupBuyGateway
 from infrastructure.adapter.repository.redis_session_repository import RedisSessionRepository
 from infrastructure.llm.deepseek_chat import build_deepseek_chat
 from infrastructure.redis.redis_client import get_redis_client
@@ -44,8 +45,13 @@ def get_session_repository() -> ISessionRepository:
 
 @lru_cache(maxsize=1)
 def get_groupbuy_repository() -> IGroupBuyRepository:
-    """单例拼团业务仓储（当前为 stub，真实 gateway 待 group-buy-market 接口确认）。"""
-    return GroupBuyRepositoryImpl()
+    """单例拼团业务仓储：通过 GroupBuyGateway 调真实 group-buy-market（T-3 余额无接口，降级）。"""
+    gateway = GroupBuyGateway(
+        base_url=settings.groupbuy_api_base,
+        source=settings.groupbuy_source,
+        channel=settings.groupbuy_channel,
+    )
+    return GroupBuyRepositoryImpl(gateway)
 
 
 @lru_cache(maxsize=1)

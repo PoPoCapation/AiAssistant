@@ -34,6 +34,8 @@ class Settings(BaseSettings):
 
     # ---- 业务数据网关（group-buy-market）----
     groupbuy_api_base: str = "http://localhost:8091"
+    groupbuy_source: str = "s01"  # query_group_buy_market_config 必填
+    groupbuy_channel: str = "c01"  # 同上
 
     # ---- 应用 ----
     app_host: str = "0.0.0.0"

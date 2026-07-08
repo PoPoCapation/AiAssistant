@@ -12,7 +12,11 @@ def build_balance_usage_tool(repo: IGroupBuyRepository):
         """查看账户余额使用情况。当用户问「我的余额」「余额还能用吗」「为什么余额不能用」时调用。
         入参：user_id 用户ID。
         返回：账户余额、可用余额、近期消费、可用活动。"""
-        b = await repo.get_balance_usage(user_id)
+        try:
+            b = await repo.get_balance_usage(user_id)
+        except Exception as e:
+            # 余额接口暂未开放（PRD 8.2），降级提示而非报错
+            return f"余额查询暂未开放：{e}。建议联系人工客服。"
         usage = "；".join(b.recent_usage) if b.recent_usage else "无"
         acts = "、".join(b.available_activities) if b.available_activities else "无"
         return (
