@@ -8,11 +8,11 @@ from __future__ import annotations
 from abc import ABC, abstractmethod
 from typing import AsyncIterator
 
-from langchain_core.messages import BaseMessage
+from langchain_core.messages import AIMessage, BaseMessage
 
 
 class ILLMPort(ABC):
-    """LLM 能力端口：非流式 + 流式对话。"""
+    """LLM 能力端口：非流式 + 流式 + 工具调用对话。"""
 
     @abstractmethod
     async def chat(self, messages: list[BaseMessage]) -> str:
@@ -21,3 +21,10 @@ class ILLMPort(ABC):
     @abstractmethod
     async def chat_stream(self, messages: list[BaseMessage]) -> AsyncIterator[str]:
         """流式对话，逐 token 返回（异步生成器）。"""
+
+    @abstractmethod
+    async def chat_with_tools(self, messages: list[BaseMessage], tools: list) -> AIMessage:
+        """带工具的对话：返回原始 ``AIMessage``（可能含 ``tool_calls`` 和/或 content）。
+
+        由 intent_node 调用：若 LLM 决定调用工具，则 ``AIMessage.tool_calls`` 非空。
+        """

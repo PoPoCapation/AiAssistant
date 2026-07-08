@@ -1,0 +1,57 @@
+"""阶段 3 验证：工具调用链路（LLM 自主调工具 -> tool_node 执行 -> 综合回答）。
+
+直接运行：.venv/Scripts/python.exe tests/test_tools.py
+需要 .env 配置可用的 DEEPSEEK_API_KEY 与 Redis。
+"""
+from __future__ import annotations
+
+import asyncio
+import sys
+import uuid
+from pathlib import Path
+
+_PROJECT_ROOT = str(Path(__file__).resolve().parents[1])
+if _PROJECT_ROOT not in sys.path:
+    sys.path.insert(0, _PROJECT_ROOT)
+
+from api.dto.chat import ChatRequest
+from app.dependency import get_assistant_service
+
+
+def test_group_buy_progress_tool_called() -> None:
+    """问「拼团还差几人成团」应触发 group_buy_progress 工具，回答含示例数据（还差 2 人）。"""
+    service = get_assistant_service()
+    sid = f"sess-tool-{uuid.uuid4().hex[:8]}"
+
+    async def _run():
+        return await service.chat(
+            ChatRequest(user_id="u_test", session_id=sid, message="我的拼团 team_001 还差几人成团？")
+        )
+
+    resp = asyncio.run(_run())
+    print("\n[intent]", resp.intent)
+    print("[reply]", resp.reply)
+    assert resp.intent == "need_tool", f"应触发工具调用，实际 intent={resp.intent}"
+    # stub 返回 remain_people=2，回答应体现「还差 2 人」
+    assert "2" in resp.reply, f"回答应含工具返回的数据: {resp.reply}"
+
+
+def test_chitchat_does_not_call_tool() -> None:
+    """闲聊不应触发工具（intent=direct）。"""
+    service = get_assistant_service()
+    sid = f"sess-chat-{uuid.uuid4().hex[:8]}"
+
+    async def _run():
+        return await service.chat(
+            ChatRequest(user_id="u_test", session_id=sid, message="你好，请用一句话介绍你能做什么。")
+        )
+
+    resp = asyncio.run(_run())
+    print("\n[闲聊 intent]", resp.intent, "| reply:", resp.reply)
+    assert resp.intent == "direct", f"闲聊不应调工具，实际 intent={resp.intent}"
+
+
+if __name__ == "__main__":
+    test_group_buy_progress_tool_called()
+    test_chitchat_does_not_call_tool()
+    print("\n阶段 3 工具调用验证通过 ✓")

@@ -28,6 +28,7 @@ class ResponseCode(Enum):
     LLM_STREAM_ERROR = ("A0002", "LLM 流式调用失败")
     LLM_CONFIG_ERROR = ("A0003", "LLM 配置缺失")
     LLM_TIMEOUT = ("A0004", "LLM 调用超时")
+    SESSION_ERROR = ("A0005", "会话存储失败")
 
     def __new__(cls, code: str, info: str) -> "ResponseCode":
         obj = object.__new__(cls)

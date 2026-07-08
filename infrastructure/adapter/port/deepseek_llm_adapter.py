@@ -1,13 +1,13 @@
 """``ILLMPort`` 的 DeepSeek 实现（基础设施层）。
 
-对应 IMPL 阶段 1.3：内部持有上一步构造的 ``ChatOpenAI``，
-对外提供非流式 ``chat`` 与流式 ``chat_stream``。
+对应 IMPL 阶段 1.3 / 3.4：内部持有 ``ChatOpenAI``，
+对外提供非流式 ``chat``、流式 ``chat_stream``、带工具 ``chat_with_tools``。
 """
 from __future__ import annotations
 
 from typing import AsyncIterator
 
-from langchain_core.messages import BaseMessage
+from langchain_core.messages import AIMessage, BaseMessage
 from langchain_openai import ChatOpenAI
 
 from common.enums import ResponseCode
@@ -46,6 +46,17 @@ class DeepSeekLLMAdapter(ILLMPort):
                 cause=e,
             ) from e
         return _content_to_text(resp.content)
+
+    async def chat_with_tools(self, messages: list[BaseMessage], tools: list) -> AIMessage:
+        try:
+            bound = self._llm.bind_tools(tools) if tools else self._llm
+            return await bound.ainvoke(messages)
+        except Exception as e:
+            raise AppException(
+                ResponseCode.LLM_ERROR,
+                str(e) or ResponseCode.LLM_ERROR.info,
+                cause=e,
+            ) from e
 
     async def chat_stream(self, messages: list[BaseMessage]) -> AsyncIterator[str]:
         try:

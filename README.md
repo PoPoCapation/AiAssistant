@@ -12,12 +12,14 @@
 | --- | --- | --- |
 | 阶段 0 | 项目骨架 + DDD 分层 + 配置 + 通用层 + 接口契约 | ✅ 已完成 |
 | 阶段 1 | DeepSeek LLM 接入（domain + infrastructure） | ✅ 已完成 |
-| 阶段 2 | LangGraph 工作流 + Redis 多轮会话 | ⬜ 待实现 |
-| 阶段 3 | MCP 工具（拼团/成团/余额查询） | ⬜ 待实现 |
+| 阶段 2 | LangGraph 工作流 + Redis 多轮会话 | ✅ 已完成 |
+| 阶段 3 | MCP 工具（拼团/成团/余额查询） | 🟡 部分完成 |
 | 阶段 4 | SSE 流式 HTTP 接口 | ⬜ 待实现 |
 | 阶段 5 | RAG 预留 + 部署文档 | ⬜ 待实现 |
+>
+> 📌 **阶段 3 进度**：工具调用链路已通（LLM 自主调工具 -> tool_node 执行 -> 综合），数据用 stub；真实 group-buy-market 网关（3.2）与 MCP Server 对外暴露（3.5）待接口确认后补。
 
-> ⚠️ **当前能力边界**：阶段 1 只到**服务层**——能通过 `AssistantService` 完成单轮非流式 / 流式 LLM 对话，**尚未提供 HTTP 接口**（`/chat`、`/health` 等在阶段 4 / 后续补齐）。验证方式为直接调用服务层测试，无需启动 Web 服务。
+> ⚠️ **当前能力边界**：到阶段 2 为止只到**服务层**——能通过 `AssistantService` 完成**多轮** LLM 对话（Redis 记上下文，按 `session_id` 隔离），**尚未提供 HTTP 接口**（`/chat`、`/health` 等在阶段 4 / 后续补齐）。验证方式为直接调用服务层测试，无需启动 Web 服务。
 
 ---
 
@@ -42,7 +44,7 @@
 AiAssistant/
 ├── app/                            # 应用启动层
 │   ├── config/settings.py          # ✅ Pydantic Settings（读 .env）
-│   └── dependency.py               # ✅ 依赖注入装配（LLM 端口 + 单轮服务）
+│   └── dependency.py               # ✅ 依赖注入装配（LLM 端口 + 仓储 + Graph + 服务）
 ├── api/                            # 接口契约层
 │   ├── response.py                 # ✅ 统一 Response<T>
 │   └── dto/chat.py                 # ✅ ChatRequest / ChatResponse / ChatMessageDTO
@@ -52,16 +54,33 @@ AiAssistant/
 │   ├── trace.py                    # ✅ TraceId 上下文（ContextVar）
 │   └── event.py                    # ⬜ 事件层预留
 ├── domain/                         # 领域层
-│   └── assistant/
-│       ├── adapter/port/illm_port.py            # ✅ LLM 端口接口
+│   ├── assistant/
+│       ├── adapter/
+│       │   ├── port/illm_port.py                 # ✅ LLM 端口接口
+│       │   └── repository/isession_repository.py # ✅ 会话仓储接口（阶段 2）
 │       └── service/
-│           ├── assistant_service.py             # ✅ IAssistantService 接口
-│           └── assistant_service_impl.py        # ✅ AssistantServiceImpl 单轮实现
+│           ├── assistant_service.py              # ✅ IAssistantService 接口
+│           ├── assistant_service_impl.py         # ✅ 多轮实现：load→graph→save（阶段 2）
+│           └── graph/                            # ✅ LangGraph 工作流（阶段 2）
+│               ├── state.py                      #   AssistantState
+│               ├── assistant_graph.py            #   组装 intent/tool/response
+│               └── nodes/{intent,tool,response}_node.py
+│   └── mcp/                                      # ✅ MCP 工具领域（阶段 3）
+│       ├── model/entity/groupbuy.py              #   值对象（拼团进度/成团/余额）
+│       ├── adapter/repository/igroupbuy_repository.py  # 仓储接口
+│       └── service/tools/                        #   3 个 @tool：拼团/成团/余额
 ├── infrastructure/                 # 基础设施层
-│   ├── llm/deepseek_chat.py                      # ✅ LangChain ChatOpenAI(DeepSeek) 封装
-│   └── adapter/port/deepseek_llm_adapter.py     # ✅ ILLMPort 实现（chat / chat_stream）
+│   ├── llm/deepseek_chat.py                      # ✅ ChatOpenAI(DeepSeek) 封装
+│   ├── adapter/
+│   │   ├── port/deepseek_llm_adapter.py          # ✅ ILLMPort 实现（chat / chat_stream）
+│   │   └── repository/
+│   │       ├── redis_session_repository.py       # ✅ 会话仓储 Redis 实现（阶段 2）
+│   │       └── groupbuy_repository_impl.py       # 🟡 拼团仓储 stub（真实 gateway 待补，阶段 3）
+│   └── redis/redis_client.py                     # ✅ async Redis 客户端，按 loop 缓存（阶段 2）
 ├── trigger/                        # 触发器层（HTTP controller，阶段 4）
 ├── tests/test_llm.py               # ✅ 阶段 1 验证
+├── tests/test_session.py           # ✅ 阶段 2 多轮验证
+├── tests/test_tools.py             # ✅ 阶段 3 工具调用验证
 ├── conftest.py                     # ✅ pytest 根级 sys.path 配置
 ├── requirements.txt
 ├── pyproject.toml
