@@ -41,6 +41,7 @@ class Settings(BaseSettings):
     app_debug: bool = False
 
     # ---- 会话 ----
+    # 20 轮 1天
     session_max_turns: int = 20
     session_ttl_seconds: int = 86400
 

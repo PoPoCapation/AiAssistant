@@ -50,7 +50,7 @@ def test_chat_stream_yields_tokens() -> None:
     req = ChatRequest(user_id="u_test", message="用一句话说『你好』。")
 
     async def _run() -> str:
-        from domain.assistant.service.assistant_service import _to_messages
+        from domain.assistant.service.assistant_service_impl import _to_messages
 
         messages = _to_messages(req, system_prompt="")
         tokens: list[str] = []
@@ -73,5 +73,18 @@ if __name__ == "__main__":
     print("user  :", request.message)
     print("reply :", response.reply)
     print("=" * 60)
+    request = ChatRequest(user_id="u_test", message="你好，我加cb。")
+    response = asyncio.run(svc.chat(request))
+    print("=" * 60)
+    print("user  :", request.message)
+    print("reply :", response.reply)
+    print("=" * 60)
+    request = ChatRequest(user_id="u_test", message="你好，我是谁。")
+    response = asyncio.run(svc.chat(request))
+    print("=" * 60)
+    print("user  :", request.message)
+    print("reply :", response.reply)
+    print("=" * 60)
+
     assert response.reply and response.reply.strip(), "回复为空"
     print("阶段 1 验证通过 ✓")

@@ -54,7 +54,9 @@ AiAssistant/
 ├── domain/                         # 领域层
 │   └── assistant/
 │       ├── adapter/port/illm_port.py            # ✅ LLM 端口接口
-│       └── service/assistant_service.py         # ✅ IAssistantService + 单轮实现
+│       └── service/
+│           ├── assistant_service.py             # ✅ IAssistantService 接口
+│           └── assistant_service_impl.py        # ✅ AssistantServiceImpl 单轮实现
 ├── infrastructure/                 # 基础设施层
 │   ├── llm/deepseek_chat.py                      # ✅ LangChain ChatOpenAI(DeepSeek) 封装
 │   └── adapter/port/deepseek_llm_adapter.py     # ✅ ILLMPort 实现（chat / chat_stream）
@@ -174,7 +176,8 @@ common（被所有层依赖）
 | `domain/assistant/adapter/port/illm_port.py` | `ILLMPort` 抽象端口：`chat()` 非流式 + `chat_stream()` 流式 |
 | `infrastructure/llm/deepseek_chat.py` | 用 `ChatOpenAI(model=deepseek-chat, base_url, api_key)` 封装 DeepSeek |
 | `infrastructure/adapter/port/deepseek_llm_adapter.py` | `ILLMPort` 实现，内部持有 `ChatOpenAI`，异常归一为 `AppException` |
-| `domain/assistant/service/assistant_service.py` | `IAssistantService` + `AssistantServiceImpl`：组装消息 → 调端口 → 返回 `ChatResponse` |
+| `domain/assistant/service/assistant_service.py` | `IAssistantService` 接口 |
+| `domain/assistant/service/assistant_service_impl.py` | `AssistantServiceImpl`：组装消息 → 调端口 → 返回 `ChatResponse` |
 | `app/config/settings.py` | Pydantic Settings 自动读取 `.env` |
 | `app/dependency.py` | 工厂函数 + `lru_cache` 单例装配 |
 | `common/` | `ResponseCode` / `AppException` / `TraceId`（对齐 Java `types` 模块） |

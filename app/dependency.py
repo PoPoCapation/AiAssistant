@@ -9,7 +9,8 @@ from functools import lru_cache
 
 from app.config.settings import settings
 from domain.assistant.adapter.port.illm_port import ILLMPort
-from domain.assistant.service.assistant_service import AssistantServiceImpl, IAssistantService
+from domain.assistant.service.assistant_service import IAssistantService
+from domain.assistant.service.assistant_service_impl import AssistantServiceImpl
 from infrastructure.adapter.port.deepseek_llm_adapter import DeepSeekLLMAdapter
 from infrastructure.llm.deepseek_chat import build_deepseek_chat
 

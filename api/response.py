@@ -18,7 +18,7 @@ class Response(BaseModel, Generic[T]):
 
     code: str = ResponseCode.SUCCESS.code
     info: str = ResponseCode.SUCCESS.info
-    data: Optional[T] = None
+    data: Optional[T] = None    
 
     @classmethod
     def success(cls, data: Optional[T] = None, info: str = ResponseCode.SUCCESS.info) -> "Response[T]":
