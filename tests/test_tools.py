@@ -25,7 +25,7 @@ def test_group_buy_progress_tool_called() -> None:
 
     async def _run():
         return await service.chat(
-            ChatRequest(user_id="u_test", session_id=sid, message="我的拼团 team_001 还差几人成团？")
+            ChatRequest(user_id="u_test", session_id=sid, message="我的拼团 29487599 还差几人成团？")
         )
 
     resp = asyncio.run(_run())
@@ -51,7 +51,23 @@ def test_chitchat_does_not_call_tool() -> None:
     assert resp.intent == "direct", f"闲聊不应调工具，实际 intent={resp.intent}"
 
 
+def test_balance_tool_called() -> None:
+    """问「我的额度」应触发 balance_usage 工具，返回真实额度（user xxx3）。"""
+    service = get_assistant_service()
+    sid = f"sess-bal-{uuid.uuid4().hex[:8]}"
+
+    async def _run():
+        return await service.chat(
+            ChatRequest(user_id="xxx3", session_id=sid, message="我的账户额度还剩多少？")
+        )
+
+    resp = asyncio.run(_run())
+    print("\n[balance intent]", resp.intent, "[reply]", resp.reply)
+    assert resp.intent == "need_tool", f"应触发余额工具，实际 intent={resp.intent}"
+
+
 if __name__ == "__main__":
     test_group_buy_progress_tool_called()
+    test_balance_tool_called()
     test_chitchat_does_not_call_tool()
     print("\n阶段 3 工具调用验证通过 ✓")

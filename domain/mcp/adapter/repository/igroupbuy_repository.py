@@ -7,7 +7,7 @@ from __future__ import annotations
 
 from abc import ABC, abstractmethod
 
-from domain.mcp.model.entity.groupbuy import BalanceUsage, GroupBuyProgress, TeamComplete
+from domain.mcp.model.entity.groupbuy import GroupBuyProgress, TeamComplete
 
 
 class IGroupBuyRepository(ABC):
@@ -20,7 +20,3 @@ class IGroupBuyRepository(ABC):
     @abstractmethod
     async def get_complete_status(self, user_id: str, team_id: str) -> TeamComplete:
         """成团进度（T-2）。"""
-
-    @abstractmethod
-    async def get_balance_usage(self, user_id: str) -> BalanceUsage:
-        """余额使用（T-3）。"""

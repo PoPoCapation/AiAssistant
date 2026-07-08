@@ -28,10 +28,10 @@ class TeamComplete(BaseModel):
 
 
 class BalanceUsage(BaseModel):
-    """余额使用（T-3）。"""
+    """用户额度（T-3 余额）。字段对齐 ai-agent-scaffold-draw-io 的 quota 系统。"""
 
     user_id: str
-    total_balance: float  # 账户余额
-    available_balance: float  # 可用余额
-    recent_usage: list[str]  # 近期消费明细（摘要）
-    available_activities: list[str]  # 可用活动
+    total_quota: int  # 总额度（MySQL user_quota.quota_count）
+    used: int  # 已用额度（MySQL user_quota.used）
+    remaining: int  # 剩余额度（Redis user_quota:{userId}，实时）
+    recent_grants: list[str]  # 近期额度发放流水（user_quota_usage）

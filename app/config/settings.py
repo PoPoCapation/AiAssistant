@@ -34,8 +34,17 @@ class Settings(BaseSettings):
 
     # ---- 业务数据网关（group-buy-market）----
     groupbuy_api_base: str = "http://localhost:8091"
-    groupbuy_source: str = "s01"  # query_group_buy_market_config 必填
-    groupbuy_channel: str = "c01"  # 同上
+
+    # ---- MySQL（直查 group_buy_market 库，工具真实数据来源）----
+    mysql_host: str = "127.0.0.1"
+    mysql_port: int = 3306
+    mysql_user: str = "root"
+    mysql_password: str = ""
+    mysql_database: str = "group_buy_market"
+
+    # ---- 用户额度（ai-agent-scaffold-draw-io 的 quota，Redis+MySQL 双写）----
+    quota_redis_db: int = 0  # quota 存在默认 db=0
+    quota_mysql_database: str = "xfg_frame_archetype"  # quota 表所在库
 
     # ---- 应用 ----
     app_host: str = "0.0.0.0"
