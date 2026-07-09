@@ -14,12 +14,12 @@
 | 阶段 1 | DeepSeek LLM 接入（domain + infrastructure） | ✅ 已完成 |
 | 阶段 2 | LangGraph 工作流 + Redis 多轮会话 | ✅ 已完成 |
 | 阶段 3 | MCP 工具（拼团/成团/余额查询） | ✅ 已完成 |
-| 阶段 4 | SSE 流式 HTTP 接口 | ⬜ 待实现 |
+| 阶段 4 | SSE 流式 HTTP 接口 | ✅ 已完成 |
 | 阶段 5 | RAG 预留 + 部署文档 | ⬜ 待实现 |
 >
 > 📌 **阶段 3 状态**：工具调用链路已通（LLM 自主调工具 -> tool_node 执行 -> 综合），T-1/T-2 直查 group_buy_market MySQL（group_buy_order 表，真实数据）；T-3 额度直查 ai-agent-scaffold-draw-io 的 Redis+MySQL 双写（user_quota/user_quota_usage）；MCP Server 对外暴露（3.5）未做。
 
-> ⚠️ **当前能力边界**：到阶段 2 为止只到**服务层**——能通过 `AssistantService` 完成**多轮** LLM 对话（Redis 记上下文，按 `session_id` 隔离），**尚未提供 HTTP 接口**（`/chat`、`/health` 等在阶段 4 / 后续补齐）。验证方式为直接调用服务层测试，无需启动 Web 服务。
+> ⚠️ **当前能力边界**：到阶段 2 为止只到**服务层**——能通过 `AssistantService` 完成**多轮** LLM 对话（Redis 记上下文，按 `session_id` 隔离），**已提供 HTTP 接口**（`/chat` SSE 流式、`/chat/sync` 非流式、`/health`）。验证方式为直接调用服务层测试，无需启动 Web 服务。
 
 ---
 
@@ -31,7 +31,7 @@
 | LLM | DeepSeek `deepseek-chat`（OpenAI 兼容接口） |
 | LLM 编排 | LangChain / LangChain-OpenAI |
 | 工作流 | LangGraph（阶段 2 起） |
-| Web 框架 | FastAPI + Uvicorn（阶段 4 起） |
+| Web 框架 | FastAPI + Uvicorn |
 | 会话存储 | Redis（阶段 2 起） |
 | 业务数据 | MySQL 直查 group_buy_market（阶段 3 起） |
 | 配置 | Pydantic Settings + `.env` |
@@ -44,6 +44,7 @@
 ```
 AiAssistant/
 ├── app/                            # 应用启动层
+│   ├── main.py                     # ✅ FastAPI 入口 + TraceId 中间件（阶段 4）
 │   ├── config/settings.py          # ✅ Pydantic Settings（读 .env）
 │   └── dependency.py               # ✅ 依赖注入装配（LLM 端口 + 仓储 + Graph + 服务）
 ├── api/                            # 接口契约层
@@ -82,12 +83,16 @@ AiAssistant/
 │   │       └── user_quota_repository_impl.py     # ✅ 用户额度仓储（Redis+MySQL 双读，阶段 3）
 │   ├── mysql/mysql_client.py                     # ✅ MySQL 异步客户端（阶段 3）
 │   └── redis/redis_client.py                     # ✅ async Redis 客户端，按 loop 缓存（阶段 2）
-├── trigger/                        # 触发器层（HTTP controller，阶段 4）
+├── trigger/http/                   # ✅ HTTP 触发器（阶段 4）
+│   ├── chat_controller.py          #   POST /chat SSE 流式
+│   ├── assistant_controller.py     #   POST /chat/sync 非流式
+│   └── health_controller.py        #   GET /health
 ├── tests/test_llm.py               # ✅ 阶段 1 验证
 ├── tests/test_session.py           # ✅ 阶段 2 多轮验证
 ├── tests/test_tools.py             # ✅ 阶段 3 工具调用验证
 ├── tests/test_groupbuy_mapping.py  # ✅ 阶段 3 字段映射验证（mock）
 ├── tests/test_quota_mapping.py     # ✅ 阶段 3 额度映射验证（mock）
+├── tests/test_sse.py               # ✅ 阶段 4 SSE 流式验证
 ├── conftest.py                     # ✅ pytest 根级 sys.path 配置
 ├── requirements.txt
 ├── pyproject.toml

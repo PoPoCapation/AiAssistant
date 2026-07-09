@@ -6,6 +6,7 @@
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
+from typing import AsyncIterator
 
 from api.dto.chat import ChatRequest, ChatResponse
 
@@ -16,3 +17,7 @@ class IAssistantService(ABC):
     @abstractmethod
     async def chat(self, req: ChatRequest) -> ChatResponse:
         """单轮对话：根据请求调用 LLM，返回回复。"""
+
+    @abstractmethod
+    async def chat_stream(self, req: ChatRequest) -> AsyncIterator[str]:
+        """流式对话：逐条返回 SSE 事件串（token / tool / [DONE] / error）。"""
