@@ -6,6 +6,7 @@
 from __future__ import annotations
 
 from pathlib import Path
+from typing import Literal
 
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
@@ -56,8 +57,40 @@ class Settings(BaseSettings):
     session_max_turns: int = 20
     session_ttl_seconds: int = 86400
 
-    # ---- RAG（预留，本期不启用）----
+    # ---- RAG（向量存储 Qdrant）----
     rag_enabled: bool = False
+    qdrant_url: str = "http://localhost:6333"
+    qdrant_api_key: str = ""
+    qdrant_collection: str = "ai_assistant"
+    qdrant_prefer_grpc: bool = False
+    qdrant_grpc_port: int = 6334
+    qdrant_timeout_seconds: int = 5
+    qdrant_replicas: int = 1
+
+    # ---- 嵌入模型 & 切块策略 ----
+    embedding_provider: Literal["dashscope", "openai", "local"] = "dashscope"
+    embedding_dimension: int = 1536
+    embedding_batch_size: int = 32
+    embedding_chunk_size: int = 512
+    embedding_chunk_overlap: int = 100
+    embedding_cache_dir: str = str(_PROJECT_ROOT / "storage" / "embedding_cache")
+
+    # ---- RAG 模型（阿里云百炼 DashScope）----
+    dashscope_api_key: str = ""
+    dashscope_base_url: str = "https://dashscope.aliyuncs.com/compatible-mode/v1"
+    embedding_model: str = "qwen3-vl-embedding"
+    embedding_model_sync: str = "text-embedding-v4"
+    embedding_model_async: str = "text-embedding-async-v2"
+    rerank_model: str = "qwen3-vl-rerank"
+
+    # ---- RAG 文本 / PDF 解析 ----
+    rag_source_dir: str = str(_PROJECT_ROOT / "storage" / "rag_sources")
+    rag_allow_pdf: bool = True
+    rag_allow_text: bool = True
+    rag_pdf_ocr_enabled: bool = True
+    rag_pdf_ocr_provider: Literal["tesseract", "dashscope", "none"] = "tesseract"
+    rag_ingest_concurrency: int = 4
+    rag_ingest_batch_size: int = 20
 
 
 settings = Settings()
