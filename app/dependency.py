@@ -27,6 +27,16 @@ from infrastructure.adapter.repository.user_quota_repository_impl import UserQuo
 from infrastructure.llm.deepseek_chat import build_deepseek_chat
 from infrastructure.mysql.mysql_client import MysqlClient
 from infrastructure.redis.redis_client import get_redis_client
+from domain.rag.adapter.port.iembedding_port import IEmbeddingService
+from domain.rag.adapter.port.irerank_port import IRerankService
+from domain.rag.adapter.repository.ivector_repository import IVectorRepository
+from domain.rag.service.retrieval_service import IRetrievalService
+from domain.rag.service.tools.knowledge_search_tool import build_knowledge_search_tool
+from infrastructure.rag.embedding_service import DashScopeEmbeddingService
+from infrastructure.rag.qdrant_repository import QdrantVectorRepository
+from infrastructure.rag.rerank_service import DashScopeRerankService
+from infrastructure.rag.retrieval_service_impl import RetrievalServiceImpl
+from infrastructure.rag.pdf_extractor import PdfOcrExtractor
 
 
 @lru_cache(maxsize=1)
@@ -62,15 +72,54 @@ def get_user_quota_repository() -> IUserQuotaRepository:
 
 
 @lru_cache(maxsize=1)
+def get_embedding_service() -> IEmbeddingService:
+    """单例嵌入服务（百炼 text-embedding-v4，1024 维）。"""
+    return DashScopeEmbeddingService(
+        settings.dashscope_api_key, settings.dashscope_base_url, settings.embedding_model_sync
+    )
+
+
+@lru_cache(maxsize=1)
+def get_rerank_service() -> IRerankService:
+    """单例重排序服务（百炼 qwen3-vl-rerank）。"""
+    return DashScopeRerankService(settings.dashscope_api_key, settings.rerank_model)
+
+
+@lru_cache(maxsize=1)
+def get_vector_repository() -> IVectorRepository:
+    """单例 Qdrant 向量仓储（Cosine）。"""
+    return QdrantVectorRepository(
+        settings.qdrant_url, settings.qdrant_api_key, settings.qdrant_collection, dim=1024
+    )
+
+
+@lru_cache(maxsize=1)
+def get_retrieval_service() -> IRetrievalService:
+    """单例 RAG 检索服务：嵌入 + Qdrant 召回 + rerank。"""
+    return RetrievalServiceImpl(
+        get_embedding_service(), get_vector_repository(), get_rerank_service()
+    )
+
+
+@lru_cache(maxsize=1)
+def get_pdf_extractor() -> PdfOcrExtractor:
+    """单例 PDF OCR 提取器（百炼 qwen-vl-ocr）。"""
+    return PdfOcrExtractor(settings.dashscope_api_key)
+
+
+@lru_cache(maxsize=1)
 def get_groupbuy_tools() -> list:
-    """单例工具列表：拼团进度 / 成团 / 余额（额度）。"""
+    """单例工具列表：拼团进度 / 成团 / 余额；rag_enabled 时追加 knowledge_search（RAG）。"""
     gb_repo = get_groupbuy_repository()
     quota_repo = get_user_quota_repository()
-    return [
+    tools = [
         build_group_buy_progress_tool(gb_repo),
         build_group_complete_tool(gb_repo),
         build_balance_usage_tool(quota_repo),
     ]
+    if settings.rag_enabled:
+        tools.append(build_knowledge_search_tool(get_retrieval_service()))
+    return tools
 
 
 @lru_cache(maxsize=1)

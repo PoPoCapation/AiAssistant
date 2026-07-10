@@ -13,6 +13,7 @@ from common.trace import TRACE_ID_HEADER, clear_trace_id, new_trace_id
 from trigger.http.assistant_controller import router as assistant_router
 from trigger.http.chat_controller import router as chat_router
 from trigger.http.health_controller import router as health_router
+from trigger.http.upload_controller import router as upload_router
 
 
 class TraceIdMiddleware:
@@ -60,6 +61,7 @@ def create_app() -> FastAPI:
     app.include_router(health_router)
     app.include_router(assistant_router)
     app.include_router(chat_router)
+    app.include_router(upload_router)
     return app
 
 

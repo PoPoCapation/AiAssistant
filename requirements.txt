@@ -17,6 +17,9 @@ langgraph>=0.2.60
 redis>=5.0
 httpx>=0.28
 aiomysql>=0.2
+qdrant-client>=1.12
+pypdfium2>=4.30
+Pillow>=10.0
 
 # ===================== MCP（可选，对外暴露工具时用） =====================
 mcp>=1.0
