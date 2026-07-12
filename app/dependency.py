@@ -38,8 +38,10 @@ from infrastructure.rag.rerank_service import DashScopeRerankService
 from infrastructure.rag.retrieval_service_impl import RetrievalServiceImpl
 from infrastructure.rag.pdf_extractor import PdfOcrExtractor
 from domain.assistant.adapter.port.isummarizer_port import ISummarizer
+from domain.assistant.adapter.port.itoken_counter import ITokenCounter
 from domain.assistant.service.context_budget_service import ContextBudgetService
 from infrastructure.adapter.port.llm_summarizer import LLMSummarizer
+from infrastructure.adapter.port.token_counter_impl import TokenCounterImpl
 
 
 @lru_cache(maxsize=1)
@@ -65,10 +67,17 @@ def get_summarizer() -> ISummarizer:
 
 
 @lru_cache(maxsize=1)
+def get_token_counter() -> ITokenCounter:
+    """单例 Token 计数器（含安全比例）。"""
+    return TokenCounterImpl(safety_ratio=settings.context_token_safety_ratio)
+
+
+@lru_cache(maxsize=1)
 def get_context_budget_service() -> ContextBudgetService:
     """单例上下文预算服务：超预算时滚动摘要压缩历史。"""
     return ContextBudgetService(
         get_summarizer(),
+        get_token_counter(),
         input_token_budget=settings.context_input_token_budget,
         compact_trigger_tokens=settings.context_compact_trigger_tokens,
         summary_max_tokens=settings.context_summary_max_tokens,
@@ -76,7 +85,6 @@ def get_context_budget_service() -> ContextBudgetService:
         min_recent_turns=settings.context_min_recent_turns,
         max_recent_turns=settings.context_max_recent_turns,
         dynamic_reserve_tokens=settings.context_dynamic_reserve_tokens,
-        safety_ratio=settings.context_token_safety_ratio,
     )
 
 

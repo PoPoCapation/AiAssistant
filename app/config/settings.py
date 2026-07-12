@@ -8,6 +8,7 @@ from __future__ import annotations
 from pathlib import Path
 from typing import Literal
 
+from pydantic import model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 # app/config/settings.py -> app/config -> app -> 项目根
@@ -102,6 +103,31 @@ class Settings(BaseSettings):
     rag_pdf_ocr_provider: Literal["tesseract", "dashscope", "none"] = "tesseract"
     rag_ingest_concurrency: int = 4
     rag_ingest_batch_size: int = 20
+
+
+    @model_validator(mode="after")
+    def _validate_context_budget(self) -> "Settings":
+        """启动时校验上下文预算阈值关系（PRD 9.3 / IMPL 5.5.1）。"""
+        assert self.context_compact_trigger_tokens < self.context_input_token_budget, (
+            "context_compact_trigger_tokens 必须 < context_input_token_budget"
+        )
+        assert (
+            self.context_compact_trigger_tokens + self.context_dynamic_reserve_tokens
+            <= self.context_input_token_budget
+        ), "compact_trigger + dynamic_reserve 必须 <= input_token_budget"
+        assert (
+            self.context_summary_max_tokens
+            + self.context_recent_max_tokens
+            + self.context_dynamic_reserve_tokens
+            < self.context_input_token_budget
+        ), "summary_max + recent_max + dynamic_reserve 必须 < input_token_budget"
+        assert (
+            self.context_min_recent_turns
+            <= self.context_max_recent_turns
+            <= self.session_max_turns
+        ), "min_recent_turns <= max_recent_turns <= session_max_turns"
+        assert 0 <= self.context_token_safety_ratio <= 0.5, "token_safety_ratio 取值 [0, 0.5]"
+        return self
 
 
 settings = Settings()

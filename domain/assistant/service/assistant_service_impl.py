@@ -86,6 +86,7 @@ class AssistantServiceImpl(IAssistantService):
         self._budget = budget_service
         self._summary_enabled = summary_enabled
         self._system_prompt = system_prompt
+        self._inflight: set[str] = set()  # 同 session 压缩任务去重（PRD 5.5.6）
 
     async def _prepare(self, req: ChatRequest):
         """load 上下文 -> compact -> 组装初始 state。返回 (session_id, state, ctx)。"""
@@ -177,12 +178,19 @@ class AssistantServiceImpl(IAssistantService):
 
     def _maybe_compact_async(self, session_id: str, ctx: SessionContext, current: BaseMessage) -> None:
         """回答完成后：持久化超 compact_trigger 则异步压缩（为下一轮预压缩），不阻塞当前响应。"""
-        if self._summary_enabled and self._budget.should_compact_post(ctx):
-            asyncio.create_task(self._compact_and_save(session_id, ctx, current))
+        if not (self._summary_enabled and self._budget.should_compact_post(ctx)):
+            return
+        if session_id in self._inflight:
+            return  # 同 session 已有压缩任务在跑，跳过（PRD 5.5.6）
+        self._inflight.add(session_id)
+        asyncio.create_task(self._compact_and_save(session_id, ctx, current))
 
     async def _compact_and_save(self, session_id: str, ctx: SessionContext, current: BaseMessage) -> None:
         try:
             compacted = await self._budget.compact(ctx, current)
-            await self._session_repo.save(session_id, compacted)
+            # 乐观锁：仅当 revision 未变化时写入（避免覆盖压缩期间的新消息）
+            await self._session_repo.save_if_revision(session_id, ctx.revision, compacted)
         except Exception:
             pass  # 后台压缩失败不影响主流程
+        finally:
+            self._inflight.discard(session_id)

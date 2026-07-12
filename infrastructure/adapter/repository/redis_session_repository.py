@@ -57,22 +57,26 @@ class RedisSessionRepository(ISessionRepository):
             raise AppException(ResponseCode.SESSION_ERROR, f"读取会话失败: {e}", cause=e) from e
         if not raw:
             return SessionContext(summary="", messages=[])
-        data = json.loads(raw)
-        # v1：[{role, content}, ...] 列表 -> 自动升级
-        if isinstance(data, list):
-            return SessionContext(summary="", messages=_from_v1(data))
-        # v2：{schema_version, summary, messages:[message_to_dict]}
-        summary = data.get("summary", "")
-        if isinstance(summary, dict):
-            summary = summary.get("content", "")
-        messages = messages_from_dict(data.get("messages", []))
-        return SessionContext(
-            summary=summary,
-            messages=messages,
-            revision=data.get("revision", 0),
-            updated_at=data.get("updated_at", ""),
-            source_message_count=data.get("source_message_count", 0),
-        )
+        try:
+            data = json.loads(raw)
+            # v1：[{role, content}, ...] 列表 -> 自动升级
+            if isinstance(data, list):
+                return SessionContext(summary="", messages=_from_v1(data))
+            # v2：{schema_version, summary, messages:[message_to_dict]}
+            summary = data.get("summary", "")
+            if isinstance(summary, dict):
+                summary = summary.get("content", "")
+            messages = messages_from_dict(data.get("messages", []))
+            return SessionContext(
+                summary=summary,
+                messages=messages,
+                revision=data.get("revision", 0),
+                updated_at=data.get("updated_at", ""),
+                source_message_count=data.get("source_message_count", 0),
+            )
+        except Exception:
+            # 未识别/损坏数据降级为空会话（PRD 5.5.3 #6）
+            return SessionContext(summary="", messages=[])
 
     async def save(self, session_id: str, ctx: SessionContext) -> None:
         # 异常保护上限：只保留最近 max_turns 轮（按 ~4 条/交互估算）
@@ -90,3 +94,23 @@ class RedisSessionRepository(ISessionRepository):
             await client.set(self._key(session_id), json.dumps(payload, ensure_ascii=False), ex=self._ttl)
         except Exception as e:
             raise AppException(ResponseCode.SESSION_ERROR, f"保存会话失败: {e}", cause=e) from e
+
+    async def save_if_revision(self, session_id: str, expected_revision: int, ctx: SessionContext) -> bool:
+        """乐观锁保存（PRD 5.5.3 #8 / 5.5.6）：仅当当前 revision == expected_revision 时写入。"""
+        try:
+            client = self._client_factory()
+            raw = await client.get(self._key(session_id))
+        except Exception as e:
+            raise AppException(ResponseCode.SESSION_ERROR, f"读取会话失败: {e}", cause=e) from e
+        current_rev = 0
+        if raw:
+            try:
+                data = json.loads(raw)
+                if isinstance(data, dict):
+                    current_rev = data.get("revision", 0)
+            except Exception:
+                pass
+        if current_rev != expected_revision:
+            return False  # revision 已变化（有新消息写入），放弃过期压缩结果
+        await self.save(session_id, ctx)
+        return True

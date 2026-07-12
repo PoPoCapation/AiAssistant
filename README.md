@@ -16,14 +16,14 @@
 | 阶段 3 | MCP 工具（拼团/成团/余额查询） | ✅ 已完成 |
 | 阶段 4 | SSE 流式 HTTP 接口 | ✅ 已完成 |
 | 阶段 5 | RAG 检索增强 | ✅ 已完成 |
-| 阶段 5.5 | 上下文预算 + Redis v2 + 滚动摘要 | ⬜ 设计完成，待实现 |
+| 阶段 5.5 | 上下文预算 + Redis v2 + 滚动摘要 | ✅ 已实现 |
 | 阶段 6 | 部署文档（docker-compose + logging_config） | ⬜ 待实现 |
 >
 > 📌 **阶段 3 状态**：工具调用链路已通（LLM 自主调工具 -> tool_node 执行 -> 综合），T-1/T-2 直查 group_buy_market MySQL（group_buy_order 表，真实数据）；T-3 额度直查 ai-agent-scaffold-draw-io 的 Redis+MySQL 双写（user_quota/user_quota_usage）；MCP Server 对外暴露（3.5）未做。
 >
 > 📌 **阶段 5 状态**：RAG 检索增强已实现（`knowledge_search` 工具 + Qdrant + 百炼 `text-embedding-v4` / `qwen3-vl-rerank` + `/upload` 文本入库 + `/upload/file` PDF OCR 入库）；**切块**：段落+句子边界+页面元信息（`[PAGE N]` 标记 / `page_no`）+ 清洗页眉页脚。
 >
-> 📌 **阶段 5.5 状态**：上下文压缩方案已完成设计，计划采用速度优先的 24K 输入预算、16K 异步压缩触发线、最近 4～6 轮完整交互、Redis Session v2 和回答后滚动摘要；当前代码仍使用“最近 20 轮 role/content 消息”方案。
+> 📌 **阶段 5.5 状态**：已实现 Token 预算（24K 硬/16K 异步触发/2K 摘要上限/8K 最近/4-6 轮/6K 预留/15% 安全比例）+ 滚动摘要（完整交互为单位）+ Redis Session v2（同 key 版本化、v1 向后兼容、无损工具链）+ ITokenCounter 端口 + save_if_revision 乐观锁 + 同 session 去重 + 损坏降级。
 >
 > 📌 **阶段 6 状态**：部署收尾（`docker-compose` + `logging_config`）待实现。
 >
@@ -72,6 +72,7 @@ AiAssistant/
 │       ├── adapter/
 │       │   ├── port/illm_port.py                 # ✅ LLM 端口接口
 │       │   ├── port/isummarizer_port.py          # ✅ 摘要器端口（上下文管理）
+│       │   ├── port/itoken_counter.py            # ✅ Token 计数端口（上下文管理）
 │       │   └── repository/isession_repository.py # ✅ 会话仓储接口（v2，上下文管理）
 │       ├── model/valobj/session_context.py       # ✅ SessionContext（摘要+完整消息）
 │       └── service/
@@ -100,6 +101,7 @@ AiAssistant/
 │   ├── adapter/
 │   │   ├── port/deepseek_llm_adapter.py          # ✅ ILLMPort 实现（chat / chat_stream）
 │   │   ├── port/llm_summarizer.py                # ✅ LLM 摘要器（滚动摘要）
+│   │   ├── port/token_counter_impl.py            # ✅ Token 计数器（含安全比例）
 │   │   └── repository/
 │   │       ├── redis_session_repository.py       # ✅ 会话仓储 Redis 实现（阶段 2）
 │   │       ├── groupbuy_repository_impl.py       # ✅ 拼团仓储（直查 MySQL，阶段 3）
@@ -136,7 +138,7 @@ AiAssistant/
 
 ---
 
-## 上下文预算与滚动压缩（阶段 5.5，待实现）
+## 上下文预算与滚动压缩（阶段 5.5，已实现）
 
 ### 设计目标
 
