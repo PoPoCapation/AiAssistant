@@ -1,0 +1,29 @@
+{
+  "customer_service_train": {
+    "file_name": "customer_service_train.jsonl",
+    "formatting": "sharegpt",
+    "columns": {
+      "messages": "conversations",
+      "system": "system",
+      "tools": "tools"
+    }
+  },
+  "customer_service_val": {
+    "file_name": "customer_service_val.jsonl",
+    "formatting": "sharegpt",
+    "columns": {
+      "messages": "conversations",
+      "system": "system",
+      "tools": "tools"
+    }
+  },
+  "customer_service_test": {
+    "file_name": "customer_service_test.jsonl",
+    "formatting": "sharegpt",
+    "columns": {
+      "messages": "conversations",
+      "system": "system",
+      "tools": "tools"
+    }
+  }
+}
