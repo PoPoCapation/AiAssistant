@@ -1,0 +1,62 @@
+{
+  "seed": 20260712,
+  "counts": {
+    "train": 800,
+    "val": 100,
+    "test": 100
+  },
+  "categories": {
+    "train": {
+      "clarification": 80,
+      "error": 40,
+      "rag": 160,
+      "safety": 40,
+      "tool_call": 440,
+      "transfer": 40
+    },
+    "val": {
+      "clarification": 10,
+      "error": 5,
+      "rag": 20,
+      "safety": 5,
+      "tool_call": 55,
+      "transfer": 5
+    },
+    "test": {
+      "clarification": 10,
+      "error": 5,
+      "rag": 20,
+      "safety": 5,
+      "tool_call": 55,
+      "transfer": 5
+    }
+  },
+  "tools": {
+    "train": {
+      "balance_usage": 144,
+      "group_buy_progress": 176,
+      "group_complete": 120
+    },
+    "val": {
+      "balance_usage": 18,
+      "group_buy_progress": 22,
+      "group_complete": 15
+    },
+    "test": {
+      "balance_usage": 18,
+      "group_buy_progress": 22,
+      "group_complete": 15
+    }
+  },
+  "curated_count": 20,
+  "character_totals": {
+    "train": 1313282,
+    "val": 163915,
+    "test": 164021
+  },
+  "sha256": {
+    "train": "11d5d4ba581934c7ce03bd47bd80b5d46a496b649d8038ce815b18f8d9cecd8b",
+    "val": "e25b29eda588d9838bc5cc0eab6a25aa9be1ee449d7c1a316438d9c92584c617",
+    "test": "0099d103e76d5161970c4a6c6f87dd0f48018f0198b0c3d912fc3b408ca7ab27"
+  }
+}
