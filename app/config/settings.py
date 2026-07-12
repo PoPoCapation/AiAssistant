@@ -57,6 +57,17 @@ class Settings(BaseSettings):
     session_max_turns: int = 20
     session_ttl_seconds: int = 86400
 
+    # ---- 上下文管理（预算 + 滚动摘要，PRD 第九章）----
+    summary_enabled: bool = True  # 开启滚动摘要
+    context_input_token_budget: int = 24576  # 单次模型完整输入硬预算
+    context_compact_trigger_tokens: int = 16384  # 异步压缩触发线（回答完成后）
+    context_summary_max_tokens: int = 2048  # 摘要上限
+    context_recent_max_tokens: int = 8192  # 最近消息 token 上限
+    context_min_recent_turns: int = 4  # 至少保留的完整交互轮数
+    context_max_recent_turns: int = 6  # 最多保留的完整交互轮数
+    context_dynamic_reserve_tokens: int = 6144  # 为工具/RAG 动态增长预留
+    context_token_safety_ratio: float = 0.15  # token 估算安全比例
+
     # ---- RAG（向量存储 Qdrant）----
     rag_enabled: bool = False
     qdrant_url: str = "http://localhost:6333"

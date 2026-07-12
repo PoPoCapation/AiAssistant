@@ -37,6 +37,9 @@ from infrastructure.rag.qdrant_repository import QdrantVectorRepository
 from infrastructure.rag.rerank_service import DashScopeRerankService
 from infrastructure.rag.retrieval_service_impl import RetrievalServiceImpl
 from infrastructure.rag.pdf_extractor import PdfOcrExtractor
+from domain.assistant.adapter.port.isummarizer_port import ISummarizer
+from domain.assistant.service.context_budget_service import ContextBudgetService
+from infrastructure.adapter.port.llm_summarizer import LLMSummarizer
 
 
 @lru_cache(maxsize=1)
@@ -52,6 +55,28 @@ def get_session_repository() -> ISessionRepository:
         client_factory=get_redis_client,
         max_turns=settings.session_max_turns,
         ttl_seconds=settings.session_ttl_seconds,
+    )
+
+
+@lru_cache(maxsize=1)
+def get_summarizer() -> ISummarizer:
+    """单例 LLM 摘要器（用 ILLMPort 做滚动摘要）。"""
+    return LLMSummarizer(get_llm_port())
+
+
+@lru_cache(maxsize=1)
+def get_context_budget_service() -> ContextBudgetService:
+    """单例上下文预算服务：超预算时滚动摘要压缩历史。"""
+    return ContextBudgetService(
+        get_summarizer(),
+        input_token_budget=settings.context_input_token_budget,
+        compact_trigger_tokens=settings.context_compact_trigger_tokens,
+        summary_max_tokens=settings.context_summary_max_tokens,
+        recent_max_tokens=settings.context_recent_max_tokens,
+        min_recent_turns=settings.context_min_recent_turns,
+        max_recent_turns=settings.context_max_recent_turns,
+        dynamic_reserve_tokens=settings.context_dynamic_reserve_tokens,
+        safety_ratio=settings.context_token_safety_ratio,
     )
 
 
@@ -130,11 +155,13 @@ def get_assistant_graph():
 
 @lru_cache(maxsize=1)
 def get_assistant_service() -> IAssistantService:
-    """单例助手服务：注入 LLM 端口 + 会话仓储 + 工作流。"""
+    """单例助手服务：LLM 端口 + 会话仓储(v2) + 工作流 + 上下文预算。"""
     return AssistantServiceImpl(
         llm_port=get_llm_port(),
         session_repo=get_session_repository(),
         graph=get_assistant_graph(),
+        budget_service=get_context_budget_service(),
+        summary_enabled=settings.summary_enabled,
     )
 
 
